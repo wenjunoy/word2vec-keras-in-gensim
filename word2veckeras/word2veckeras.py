@@ -183,7 +183,7 @@ def build_keras_model_cbow(index_size,vector_size,
  
     kerasmodel = Graph()
     kerasmodel.add_input(name='point' , input_shape=(sub_batch_size,), dtype='int')
-    kerasmodel.add_input(name='index' , input_shape=(1,), dtype='int')
+    kerasmodel.add_input(name='index' , input_shape=(None,), dtype='int')
     kerasmodel.add_node(Embedding(index_size, vector_size, weights=[model.syn0]),name='embedding', input='index')
     kerasmodel.add_node(Embedding(context_size, vector_size, input_length=sub_batch_size,weights=[model.keras_syn1]),name='embedpoint', input='point')
     if cbow_mean:
@@ -360,7 +360,8 @@ class Word2VecKeras(gensim.models.word2vec.Word2Vec):
                                                      )
                 
             gen=train_batch_sg(self, sentences, sub_batch_size=sub_batch_size,batch_size=batch_size)
-            self.kerasmodel.nodes['embedding'].set_weights([self.syn0])
+            # self.kerasmodel.nodes['embedding'].set_weights([self.syn0])
+            self.kerasmodel.get_layer(name='embedding').set_weights([self.syn0])
             self.kerasmodel.fit_generator(gen,samples_per_epoch=samples_per_epoch, nb_epoch=self.iter, verbose=0)
         else:
             samples_per_epoch=int(sum(map(len,sentences)))
@@ -373,15 +374,20 @@ class Word2VecKeras(gensim.models.word2vec.Word2Vec):
                                                        )
             gen=train_batch_cbow(self, sentences, self.alpha, work=None,batch_size=batch_size)
             self.kerasmodel.fit_generator(gen,samples_per_epoch=samples_per_epoch, nb_epoch=self.iter,verbose=0)
-        self.syn0=self.kerasmodel.nodes['embedding'].get_weights()[0]
+        # self.syn0=self.kerasmodel.nodes['embedding'].get_weights()[0]
+        self.syn0 = self.kerasmodel.get_layer(name='embedding').get_weights()[0]
         if self.negative>0 and self.hs :
-            syn1tmp=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            # syn1tmp=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            syn1tmp=self.kerasmodel.get_layer(name='embedpoint').get_weights()[0]
             self.syn1=syn1tmp[0:len(self.vocab)]
             self.syn1neg=syn1tmp[len(self.vocab):2*len(self.vocab)]
+
         elif self.hs:
-            self.syn1=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            # self.syn1=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            self.syn1=self.kerasmodel.get_layer(name='embedpoint').get_weights()[0]
         else:
-            self.syn1neg=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            # self.syn1neg=self.kerasmodel.nodes['embedpoint'].get_weights()[0]
+            self.syn1neg=self.kerasmodel.get_layer(name='embedpoint').get_weights()[0]
 
 
 if __name__ == "__main__":
@@ -395,10 +401,10 @@ if __name__ == "__main__":
     v_size=5
     sg_v=0
     topn=4
-    # hs=1
-    # negative=0
-    hs=0
-    negative=5
+    hs=1
+    negative=0
+    # hs=0
+    # negative=5
     
 
 
